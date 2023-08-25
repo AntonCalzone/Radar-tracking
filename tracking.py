@@ -4,7 +4,6 @@ confirmed objects as moving or stationary."""
 import pandas as pd
 import numpy as np
 from math import pi, cos, sin, atan, radians, degrees, acos
-import time
 from clustering2 import cluster_new_frame
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
@@ -346,17 +345,13 @@ class RadarTracker:
         """Update radar detections with dataframe.
         
         @param detections_df  Dataframe containing new radar detections"""
-        (self.detections, cluster_time, process_time) = cluster_new_frame(detections_df)
-
-        return (cluster_time, process_time) # TODO: Remove timings.
+        self.detections = cluster_new_frame(detections_df)
 
     def get_detections_from_numpy_dict(self, detections_dict):
         """Update radar detections with numpy dictionary
         
         @param detections_dict  Dictionary containing new radar detections"""
-        (self.detections, cluster_time, process_time) = cluster_new_frame(detections_dict)
-
-        return (cluster_time, process_time) # TODO: Remove timings.
+        self.detections = cluster_new_frame(detections_dict)
 
     def get_detections_from_file(self, file_name):
         """Update radar detections with data from csv file.
@@ -374,10 +369,7 @@ class RadarTracker:
 
         np_lists = detections_df.to_numpy().T   # Convert df to np lists
         detections_dict = {'x':np_lists[0],'y':np_lists[1],'intensity':np_lists[2],'doppler':np_lists[3]}
-
-        start_time = time.perf_counter()
-        cluster_time, process_time = self.get_detections_from_numpy_dict(detections_dict)
-        return (time.perf_counter() - start_time, cluster_time, process_time)
+        self.get_detections_from_numpy_dict(detections_dict)
 
     def get_tracked_objects(self):
         """Return iterator of currently tracked objects.

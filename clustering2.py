@@ -6,25 +6,23 @@ import time
 epsilon = 5 
 min_points = 15 
 
-# Takes detections (x,y,intensity,doppler) as dataframe and clusters it. Returns dataframe
-# with size, position, and bounding box for each cluster
+
 def cluster_new_frame(detections):
     """Return dictionary containing data about detected clusters in radar detections.
     
     Clustering is done with DBSCAN algorithm.
     @param detections  Dictionary containing raw radar data"""
 
-    start_time = time.perf_counter()
+    # start_time = time.perf_counter()
     clustering = DBSCAN(eps=epsilon,min_samples=min_points,n_jobs=-1).fit(np.array([detections['x'],detections['y']]).T)
-    # clustering = DBSCAN(eps=epsilon,min_samples=min_points).fit(np.array([detections['x'],detections['y']]).T)
-    cluster_time = time.perf_counter()
+    # cluster_time = time.perf_counter()
 
     labels = clustering.labels_
     unique_labels, counts = np.unique(labels, return_counts=True)   #Get unique labels and count of labels
     object_indices = [(labels == label).nonzero()[0] for label in unique_labels]   # Get indices of detections belonging to each object
     num_objects = len(unique_labels)
 
-    if (-1) in unique_labels:       #Remove noise if present
+    if (-1) in unique_labels:       #Remove noise points if present
         counts = counts[1:]
         num_objects -= 1
         object_indices = object_indices[1:]
@@ -36,8 +34,7 @@ def cluster_new_frame(detections):
               "top_left_x":np.empty(num_objects,dtype=np.float16),"top_left_y":np.empty(num_objects,dtype=np.float16),
               "bottom_left_x":np.empty(num_objects,dtype=np.float16),"bottom_left_y":np.empty(num_objects,dtype=np.float16),
               "top_right_x":np.empty(num_objects,dtype=np.float16),"top_right_y":np.empty(num_objects,dtype=np.float16),
-              "bottom_right_x":np.empty(num_objects,dtype=np.float16),"bottom_right_y":np.empty(num_objects,dtype=np.float16),
-              "doppler":np.empty(num_objects,dtype=np.int16)}
+              "bottom_right_x":np.empty(num_objects,dtype=np.float16),"bottom_right_y":np.empty(num_objects,dtype=np.float16)}
 
     # Fill output dict
     output["num_points"] = counts
@@ -56,9 +53,9 @@ def cluster_new_frame(detections):
         doppler_values, doppler_counts = np.unique(detections['doppler'], return_counts=True)
         output["doppler"][i] = doppler_values[np.argmax(doppler_counts)]    
 
-    end_time = time.perf_counter()       
-
-    return (output, cluster_time - start_time, end_time - cluster_time)
+    # end_time = time.perf_counter()       
+    return output
+    # return (output, cluster_time - start_time, end_time - cluster_time)
 
 def get_majority(elements):
     """Returns majority value and count of value given list of elements"""
