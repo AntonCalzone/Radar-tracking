@@ -1,23 +1,22 @@
 from sklearn.cluster import DBSCAN
 import numpy as np
-import pandas as pd
 from collections import Counter
 import time
 
-#TODO: Cythonize
-
 epsilon = 5 
-# epsilon = 10
 min_points = 15 
-# min_points = 5
 
 # Takes detections (x,y,intensity,doppler) as dataframe and clusters it. Returns dataframe
 # with size, position, and bounding box for each cluster
 def cluster_new_frame(detections):
+    """Return dictionary containing data about detected clusters in radar detections.
+    
+    Clustering is done with DBSCAN algorithm.
+    @param detections  Dictionary containing raw radar data"""
 
     start_time = time.perf_counter()
-    # clustering = DBSCAN(eps=epsilon,min_samples=min_points,n_jobs=-1).fit(np.array([detections['x'],detections['y']]).T)
-    clustering = DBSCAN(eps=epsilon,min_samples=min_points).fit(np.array([detections['x'],detections['y']]).T)
+    clustering = DBSCAN(eps=epsilon,min_samples=min_points,n_jobs=-1).fit(np.array([detections['x'],detections['y']]).T)
+    # clustering = DBSCAN(eps=epsilon,min_samples=min_points).fit(np.array([detections['x'],detections['y']]).T)
     cluster_time = time.perf_counter()
 
     labels = clustering.labels_
