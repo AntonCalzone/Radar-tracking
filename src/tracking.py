@@ -4,7 +4,7 @@ confirmed objects as moving or stationary."""
 import pandas as pd
 import numpy as np
 from math import pi, cos, sin, atan, radians, degrees, acos
-from clustering2 import cluster_new_frame
+from .clustering2 import cluster_new_frame
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
@@ -15,7 +15,7 @@ class RadarTracker:
 
     def __init__(self, use_doppler=False, min_velocity=1):
         """Initializer for RadarTracker class.
-        
+
         @param use_doppler  Enable/disable doppler, disabled by default
         @param min_velocity  Minimum velocity for object to be classified as moving, 1 m/s default.
         """
@@ -32,12 +32,8 @@ class RadarTracker:
         self.detections = None  # Detections from radar
         # Currently tracked objects
         self.tracked_objects = pd.DataFrame(
-            {}, 
-            columns=["num_points", "xpos", "ypos", "top_left_x", "top_left_y",
-            "bottom_right_x", "bottom_right_y", "status", "id", "score",
-            "max_score", "head", "vel", "est_xpos", "est_ypos",
-            "est_top_left_x", "est_top_left_y", "est_bottom_right_x",
-            "est_bottom_right_y", "last_update", "Classification"])
+            {},
+            columns=["num_points", "xpos", "ypos", "top_left_x", "top_left_y", "bottom_right_x", "bottom_right_y", "status", "id", "score", "max_score", "head", "vel", "est_xpos", "est_ypos", "est_top_left_x", "est_top_left_y", "est_bottom_right_x", "est_bottom_right_y", "last_update", "Classification"])
         self.current_heading = 0                   # Assume vessel pointed north when initializing
         self.doppler_enabled = use_doppler
         self.elapsed_time = None
@@ -45,10 +41,10 @@ class RadarTracker:
         self.save_output = False
         self.num_frames_printed = 0
 
-    def iterate(self, INS_data=(0,0,0), elapsed_time=1):
+    def iterate(self, INS_data=(0, 0, 0), elapsed_time=1):
         """Perform tracking iteration.
-        
-        @param INS_data  Triple containing distance moved x-wise, y-wise, and rotation. (0,0,0) 
+
+        @param INS_data  Triple containing distance moved x-wise, y-wise, and rotation. (0,0,0)
         default
         @param elapsed_time  Time since last iteration, 1 by default"""
         self.detections = pd.DataFrame(self.detections)
@@ -111,7 +107,7 @@ class RadarTracker:
                 # Get size mask
                 old_num_points = tracked_objects_np[self.tracked_objects.columns.get_loc("num_points")]
                 new_num_points = detections_np[self.detections.columns.get_loc("num_points")]
-                size_ratios = np.full(match_matrix_dim, old_num_points) / new_num_points[:,np.newaxis]
+                size_ratios = np.full(match_matrix_dim, old_num_points) / new_num_points[:, np.newaxis]
 
                 size_lower_mask = size_ratios > 0.6
                 size_upper_mask = size_ratios < 1.4
@@ -138,20 +134,17 @@ class RadarTracker:
 
         # Update statuses, delete deprecated objects
         self.tracked_objects.loc[self.tracked_objects["score"] > self.detection_threshold, "status"] = "Confirmed"
-        to_delete = np.where((self.tracked_objects["max_score"] - self.tracked_objects["score"] > self.score_increase) | \
-                             (self.tracked_objects["score"] < 0))[0]
+        to_delete = np.where((self.tracked_objects["max_score"] - self.tracked_objects["score"] > self.score_increase) | (self.tracked_objects["score"] < 0))[0]
         self.tracked_objects.drop(to_delete, inplace=True)
 
         # Assign ID:s for objects confirmed this iteration
         num_tracks_to_id = len(self.tracked_objects.loc[(self.tracked_objects["id"] == -1) & (self.tracked_objects["status"] == "Confirmed")])
         start_id = max(self.tracked_objects["id"].to_list() + [0])
-        self.tracked_objects.loc[(self.tracked_objects["id"] == -1) & (self.tracked_objects["status"] == "Confirmed"), "id"] = \
-                                                                                    [i for i in range(start_id, start_id + num_tracks_to_id)]
+        self.tracked_objects.loc[(self.tracked_objects["id"] == -1) & (self.tracked_objects["status"] == "Confirmed"), "id"] = [i for i in range(start_id, start_id + num_tracks_to_id)]
 
         # Non-matched new detections are added as tentative objects
-        missing_columns = ["status","id","score","max_score","est_xpos","est_ypos","vel","vel0","vel1","vel2","vel3","vel4",
-                        "head","head0","head1","head2","head3","head4","last_update"]
-        missing_values = ["Tentative",-1,0,0,0,0,-1,np.nan,np.nan,np.nan,np.nan,np.nan,0,np.nan,np.nan,np.nan,np.nan,np.nan,0]
+        missing_columns = ["status", "id", "score", "max_score", "est_xpos", "est_ypos", "vel", "vel0", "vel1", "vel2", "vel3", "vel4", "head", "head0", "head1", "head2", "head3", "head4", "last_update"]
+        missing_values = ["Tentative", -1, 0, 0, 0, 0, -1, np.nan, np.nan, np.nan, np.nan, np.nan, 0, np.nan, np.nan, np.nan, np.nan, np.nan, 0]
         for col, val in zip(missing_columns, missing_values):
             self.detections[col] = val
         self.tracked_objects = pd.concat([self.tracked_objects, self.detections], ignore_index=True, sort=False)
@@ -171,10 +164,10 @@ class RadarTracker:
 
     def estimate_object_positions(self, INS_data):
         """Update tracked objects estimated positions.
-        
+
         Position estimation is done via dead reckoning, if no recorded velocity/heading the
         estimated position is set to detected position. Takes vessel movement into account.
-        
+
         @param INS_data  Triple describing vessels movement since last iteration"""
         # Set all estimated values to true values
         self.tracked_objects["est_xpos"] = self.tracked_objects["xpos"]
@@ -186,22 +179,22 @@ class RadarTracker:
 
         # Set estimated values of objects w/ recorded velocities by dead reckoning
         self.tracked_objects.loc[self.tracked_objects["vel"] != -1, "est_xpos"] = \
-                    self.tracked_objects["xpos"] + self.tracked_objects["vel"] * np.cos(self.tracked_objects["head"].astype(float)) * self.elapsed_time
+            self.tracked_objects["xpos"] + self.tracked_objects["vel"] * np.cos(self.tracked_objects["head"].astype(float)) * self.elapsed_time
         self.tracked_objects.loc[self.tracked_objects["vel"] != -1, "est_ypos"] = \
-                    self.tracked_objects["ypos"] + self.tracked_objects["vel"] * np.sin(self.tracked_objects["head"].astype(float)) * self.elapsed_time
+            self.tracked_objects["ypos"] + self.tracked_objects["vel"] * np.sin(self.tracked_objects["head"].astype(float)) * self.elapsed_time
         self.tracked_objects.loc[self.tracked_objects["vel"] != -1, "est_top_left_y"] = \
-                    self.tracked_objects["top_left_y"] + self.tracked_objects["vel"] * np.sin(self.tracked_objects["head"].astype(float)) * self.elapsed_time
+            self.tracked_objects["top_left_y"] + self.tracked_objects["vel"] * np.sin(self.tracked_objects["head"].astype(float)) * self.elapsed_time
         self.tracked_objects.loc[self.tracked_objects["vel"] != -1, "est_bottom_right_y"] = \
-                    self.tracked_objects["bottom_right_y"] + self.tracked_objects["vel"] * np.sin(self.tracked_objects["head"].astype(float)) * self.elapsed_time
+            self.tracked_objects["bottom_right_y"] + self.tracked_objects["vel"] * np.sin(self.tracked_objects["head"].astype(float)) * self.elapsed_time
         self.tracked_objects.loc[self.tracked_objects["vel"] != -1, "est_top_left_x"] = \
-                    self.tracked_objects["top_left_x"] + self.tracked_objects["vel"] * np.cos(self.tracked_objects["head"].astype(float)) * self.elapsed_time
+            self.tracked_objects["top_left_x"] + self.tracked_objects["vel"] * np.cos(self.tracked_objects["head"].astype(float)) * self.elapsed_time
         self.tracked_objects.loc[self.tracked_objects["vel"] != -1, "est_bottom_right_x"] = \
-                    self.tracked_objects["bottom_right_x"] + self.tracked_objects["vel"] * np.cos(self.tracked_objects["head"].astype(float)) * self.elapsed_time
+            self.tracked_objects["bottom_right_x"] + self.tracked_objects["vel"] * np.cos(self.tracked_objects["head"].astype(float)) * self.elapsed_time
 
-        #Account for distance travelled in true and estimated position
-        x_diff,y_diff,_ = INS_data
-        self.tracked_objects[["xpos","est_xpos"]] -= x_diff
-        self.tracked_objects[["ypos","est_ypos"]] -= y_diff
+        # Account for distance travelled in true and estimated position
+        x_diff, y_diff, _ = INS_data
+        self.tracked_objects[["xpos", "est_xpos"]] -= x_diff
+        self.tracked_objects[["ypos", "est_ypos"]] -= y_diff
 
     def rotate_detections(self):
         """Rotate newly detected objects to align true north and y-axis."""
@@ -221,17 +214,17 @@ class RadarTracker:
         rotated_detections['top_right_x'] = self.detections['top_right_x'] * cos(theta) - self.detections['top_right_y'] * sin(theta)
         rotated_detections['bottom_right_x'] = self.detections['bottom_right_x'] * cos(theta) - self.detections['bottom_right_y'] * sin(theta)
         # Save new top_right/bottom_left values, drop other values
-        rotated_detections['top_left_y'] = rotated_detections[['top_left_y','bottom_left_y','top_right_y','bottom_right_y']].max(axis=1)
-        rotated_detections['bottom_right_y'] = rotated_detections[['top_left_y','bottom_left_y','top_right_y','bottom_right_y']].min(axis=1)
-        rotated_detections['top_left_x'] = rotated_detections[['top_left_x','bottom_left_x','top_right_x','bottom_right_x']].min(axis=1)
-        rotated_detections['bottom_right_x'] = rotated_detections[['top_left_x','bottom_left_x','top_right_x','bottom_right_x']].max(axis=1)
-        rotated_detections.drop(['bottom_left_x','bottom_left_y','top_right_x','top_right_y'], axis=1)
+        rotated_detections['top_left_y'] = rotated_detections[['top_left_y', 'bottom_left_y', 'top_right_y', 'bottom_right_y']].max(axis=1)
+        rotated_detections['bottom_right_y'] = rotated_detections[['top_left_y', 'bottom_left_y', 'top_right_y', 'bottom_right_y']].min(axis=1)
+        rotated_detections['top_left_x'] = rotated_detections[['top_left_x', 'bottom_left_x', 'top_right_x', 'bottom_right_x']].min(axis=1)
+        rotated_detections['bottom_right_x'] = rotated_detections[['top_left_x', 'bottom_left_x', 'top_right_x', 'bottom_right_x']].max(axis=1)
+        rotated_detections.drop(['bottom_left_x', 'bottom_left_y', 'top_right_x', 'top_right_y'], axis=1)
 
         self.detections = rotated_detections
 
     def object_match(self, old_object, new_object):
         """Check if two objects are similair enough to be matched.
-        
+
         @param old_object  Previously tracked object
         @param new_object  Newly detected object"""
         # Size check, true if objects within 30% of eachother. NOTE: Might have to tweak range
@@ -239,10 +232,8 @@ class RadarTracker:
         if not (0.7 < size_ratio < 1.3):
             return False
 
-
         # Distance check, true if new object within old objects estimated bounding box
-        if not (old_object.est_top_left_x < new_object.xpos < old_object.est_bottom_right_x)\
-             or not (old_object.est_bottom_right_y < new_object.ypos < old_object.est_top_left_y):
+        if not (old_object.est_top_left_x < new_object.xpos < old_object.est_bottom_right_x) or not (old_object.est_bottom_right_y < new_object.ypos < old_object.est_top_left_y):
             return False
 
         # 0=not moving, 1=receding, 2=approaching, 255=doppler not on
@@ -268,9 +259,9 @@ class RadarTracker:
 
     def get_velocity_heading(self, old_object, new_object):
         """Calculate velocity and heading of object based on new detection.
-        
+
         Returns average of last five velocities/heading to reduce noise.
-        
+
         @param old_object  Previously tracked object
         @param new_object  Newly detected object"""
         # Calculate current velocity
@@ -279,10 +270,10 @@ class RadarTracker:
         current_vel = distance_travelled / time_since_update
 
         # Calculate current heading
-        if old_object.xpos == new_object.xpos:    
-            if old_object.ypos >= new_object.ypos:    #Avoid dividing w/ zero
+        if old_object.xpos == new_object.xpos:
+            if old_object.ypos >= new_object.ypos:    # Avoid dividing w/ zero
                 current_head = - pi / 2
-            else: 
+            else:
                 current_head = pi / 2
         else:
             opposite = new_object.ypos - old_object.ypos
@@ -297,8 +288,8 @@ class RadarTracker:
         vel_list = [current_vel]
         head_list = [current_head]
         for i in range(4):
-            vel_list.append(old_object[self.tracked_objects.columns.get_loc("vel"+str(i))])
-            head_list.append(old_object[self.tracked_objects.columns.get_loc("head"+str(i))])
+            vel_list.append(old_object[self.tracked_objects.columns.get_loc("vel" + str(i))])
+            head_list.append(old_object[self.tracked_objects.columns.get_loc("head" + str(i))])
 
         vel_list = np.array(vel_list)
         head_list = np.array(head_list)
@@ -312,20 +303,18 @@ class RadarTracker:
 
         @param old_object_index  Index in dataframe of object
         @param new_object  Newly spotted object"""
-        # Calculate new values 
+        # Calculate new values
         num_points = new_object.num_points
-        est_xpos = self.tracked_objects.loc[old_object_index,"xpos"]
-        est_ypos = self.tracked_objects.loc[old_object_index,"ypos"]
-        score = self.tracked_objects.loc[old_object_index,"score"] + 2 * self.score_increase
+        est_xpos = self.tracked_objects.loc[old_object_index, "xpos"]
+        est_ypos = self.tracked_objects.loc[old_object_index, "ypos"]
+        score = self.tracked_objects.loc[old_object_index, "score"] + 2 * self.score_increase
         vel, vel_history, head, head_history = self.get_velocity_heading(self.tracked_objects.loc[old_object_index], new_object)
-        max_score = max(self.tracked_objects.loc[old_object_index,"max_score"], score - self.score_increase)
+        max_score = max(self.tracked_objects.loc[old_object_index, "max_score"], score - self.score_increase)
 
         # Assign new values to old object
-        columns_to_update = ("num_points","xpos","ypos","top_left_x","bottom_right_x","bottom_right_y","top_left_y","est_xpos","est_ypos","score","vel","vel0",
-                            "vel1","vel2","vel3","vel4","head","head0","head1","head2","head3","head4","last_update","max_score")
-        new_values = [num_points,new_object.xpos,new_object.ypos,new_object.top_left_x,new_object.bottom_right_x,new_object.bottom_right_y,new_object.top_left_y,
-                    est_xpos,est_ypos,score,vel,*vel_history,head,*head_history,0,max_score]
-        self.tracked_objects.loc[old_object_index,columns_to_update] = new_values
+        columns_to_update = ("num_points", "xpos", "ypos", "top_left_x", "bottom_right_x", "bottom_right_y", "top_left_y", "est_xpos", "est_ypos", "score", "vel", "vel0", "vel1", "vel2", "vel3", "vel4", "head", "head0", "head1", "head2", "head3", "head4", "last_update", "max_score")
+        new_values = [num_points, new_object.xpos, new_object.ypos, new_object.top_left_x, new_object.bottom_right_x, new_object.bottom_right_y, new_object.top_left_y, est_xpos, est_ypos, score, vel, *vel_history, head, *head_history, 0, max_score]
+        self.tracked_objects.loc[old_object_index, columns_to_update] = new_values
 
     def enable_doppler(self):
         """Enable doppler functionality."""
@@ -337,43 +326,43 @@ class RadarTracker:
 
     def set_min_velocoty(self, min_velocity):
         """Set minimum velocity for object to be considered moving.
-        
+
         @param min_velocity  New minimum velocity"""
         self.min_velocity = min_velocity
 
     def get_detections_from_dataframe(self, detections_df):
         """Update radar detections with dataframe.
-        
+
         @param detections_df  Dataframe containing new radar detections"""
         self.detections = cluster_new_frame(detections_df)
 
     def get_detections_from_numpy_dict(self, detections_dict):
         """Update radar detections with numpy dictionary
-        
+
         @param detections_dict  Dictionary containing new radar detections"""
         self.detections = cluster_new_frame(detections_dict)
 
     def get_detections_from_file(self, file_name):
         """Update radar detections with data from csv file.
-        
+
         @param file_name  Path to file containing new radar detections"""
         # Check if file contains doppler data or not
         with open(file_name, 'r') as f:
             doppler_included = len(f.readlines()[0].split(',')) == 4
 
         if doppler_included:
-            detections_df = pd.read_csv(file_name, names=['x','y','intensity','doppler'])
+            detections_df = pd.read_csv(file_name, names=['x', 'y', 'intensity', 'doppler'])
         else:
-            detections_df = pd.read_csv(file_name, names=['x','y','intensity'])
+            detections_df = pd.read_csv(file_name, names=['x', 'y', 'intensity'])
             detections_df['doppler'] = 255
 
         np_lists = detections_df.to_numpy().T   # Convert df to np lists
-        detections_dict = {'x':np_lists[0],'y':np_lists[1],'intensity':np_lists[2],'doppler':np_lists[3]}
+        detections_dict = {'x': np_lists[0], 'y': np_lists[1], 'intensity': np_lists[2], 'doppler': np_lists[3]}
         self.get_detections_from_numpy_dict(detections_dict)
 
     def get_tracked_objects(self):
         """Return iterator of currently tracked objects.
-        
+
         Used when publishing confirmed objects in ROS."""
         return self.tracked_objects.itertuples()
 
@@ -387,7 +376,7 @@ class RadarTracker:
 
     def visualize(self, raw_data_file=None):
         """Visualize currently tracked objects in map.
-        
+
         @param raw_data_file  Path to file containing raw radar detections, if not given only
         tracked objects will be plotted"""
         arrow_length = 30
@@ -395,19 +384,19 @@ class RadarTracker:
         # Clear any open figures
         plt.clf()
         plt.cla()
-    
+
         # Scatter plot raw radar detections if file name supplied
         if raw_data_file is not None:
-            points = pd.read_csv(raw_data_file, index_col=False, names=['x','y','intensity','doppler'])
-    
+            points = pd.read_csv(raw_data_file, index_col=False, names=['x', 'y', 'intensity', 'doppler'])
+
             # Rotate data to align y-axis and true north
             theta = radians(- self.current_heading)
             rotated_points = points.copy(deep=True)
             rotated_points['x'] = points['x'] * cos(theta) - points['y'] * sin(theta)
             rotated_points['y'] = points['y'] * cos(theta) + points['x'] * sin(theta)
-    
-            plt.scatter(rotated_points['x'],rotated_points['y'], s=0.1)
-    
+
+            plt.scatter(rotated_points['x'], rotated_points['y'], s=0.1)
+
         # Set color of objects
         self.tracked_objects["color"] = 'r'
         self.tracked_objects.loc[self.tracked_objects["Classification"] == 1, "color"] = '#f2f500'
@@ -415,33 +404,33 @@ class RadarTracker:
         self.tracked_objects["point_size"] = self.tracked_objects["num_points"] / 20
 
         # Draw MARV heading arrow
-        x,y = 0, 0
+        x, y = 0, 0
         dx = 15 * cos(radians(90 - self.current_heading))
         dy = 15 * sin(radians(90 - self.current_heading))
-        plt.arrow(x,y,dx,dy,length_includes_head=True)
-        plt.scatter([0],[0], s=5, c='r')    #Draw red points for MARV
-    
-        plt.scatter(self.tracked_objects['xpos'],self.tracked_objects['ypos'],c=self.tracked_objects["color"])
+        plt.arrow(x, y, dx, dy, length_includes_head=True)
+        plt.scatter([0], [0], s=5, c='r')    # Draw red points for MARV
+
+        plt.scatter(self.tracked_objects['xpos'], self.tracked_objects['ypos'], c=self.tracked_objects["color"])
         ax = plt.gca()
         for row in self.tracked_objects.itertuples():
-              if row.status == "Confirmed":                         # Draw bounding boxes
+            if row.status == "Confirmed":                         # Draw bounding boxes
                 width = row.bottom_right_x - row.top_left_x
                 height = row.top_left_y - row.bottom_right_y
                 x = row.top_left_x
                 y = row.bottom_right_y
-                ax.add_patch(Rectangle((x,y),width,height,edgecolor='k',fill=False))
+                ax.add_patch(Rectangle((x, y), width, height, edgecolor='k', fill=False))
                 if row.Classification == 2:     # Draw heading arrows for moving objects
                     x = row.xpos
                     y = row.ypos
                     dx = arrow_length * np.cos(row.head)
                     dy = arrow_length * np.sin(row.head)
-                    text_dx = (arrow_length+5) * np.cos(row.head)
-                    text_dy = (arrow_length+5) * np.sin(row.head)
-                    plt.arrow(x,y,dx,dy,length_includes_head=True)
-                    plt.text(x+text_dx,y+text_dy,str(round(row.vel,2)),fontsize=5)
-                    plt.text(x,y,str(row.id),fontsize=6)
-        plt.xlim([-450,450])
-        plt.ylim([-450,450])
+                    text_dx = (arrow_length + 5) * np.cos(row.head)
+                    text_dy = (arrow_length + 5) * np.sin(row.head)
+                    plt.arrow(x, y, dx, dy, length_includes_head=True)
+                    plt.text(x + text_dx, y + text_dy, str(round(row.vel, 2)), fontsize=5)
+                    plt.text(x, y, str(row.id), fontsize=6)
+        plt.xlim([-450, 450])
+        plt.ylim([-450, 450])
 
         if self.save_output:
             file_name = "/Users/anton/Desktop/real_run/frame" + str(self.num_frames_printed) + ".png"
@@ -455,10 +444,9 @@ class RadarTracker:
 # Other Functions
 def inconsistent_heading(object):
     """Check if heading of object is inconsistent.
-    
+
     @param object  Object to check heading of"""
     if object.status == "Confirmed":
-        if abs(object.head4 - object.head3) > pi or abs(object.head3 - object.head2) > pi or \
-            abs(object.head2 - object.head1) > pi or abs(object.head1 - object.head0) > pi:
+        if abs(object.head4 - object.head3) > pi or abs(object.head3 - object.head2) > pi or abs(object.head2 - object.head1) > pi or abs(object.head1 - object.head0) > pi:
             return True
     return False
